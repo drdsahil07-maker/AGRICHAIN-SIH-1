@@ -22,7 +22,7 @@ if (process.env.VITE_SUPABASE_ANON_KEY) {
 }
 
 async function startServer() {
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   // ==========================================
   // VITE OR STATIC FRONTEND SERVING
