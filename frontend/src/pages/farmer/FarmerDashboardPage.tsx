@@ -441,16 +441,16 @@ export const FarmerDashboardPage: React.FC = () => {
                     <span className="text-xs text-slate-500">Mandi Displayed Gross Price:</span>
                     <span className="text-sm font-bold text-slate-900 font-mono">
                       ₹{liveMandi?.available && activeMandiRecord
-                        ? (activeMandiRecord.modal_price_per_kg || (Number(activeMandiRecord.modal_price) / 100)).toFixed(2)
-                        : selectedProduce.governmentMandiPrice.modalPrice.toFixed(2)} / KG
+                        ? Number(activeMandiRecord.modal_price_per_kg || (Number(activeMandiRecord.modal_price) / 100) || 0).toFixed(2)
+                        : Number(selectedProduce?.governmentMandiPrice?.modalPrice ?? 12).toFixed(2)} / KG
                     </span>
                   </div>
 
                   {liveMandi?.available && activeMandiRecord && (
                     <div className="flex items-center justify-between text-[11px] text-slate-500 bg-slate-50 p-2 rounded-lg font-mono">
-                      <span>Min: ₹{(activeMandiRecord.min_price_per_kg || (Number(activeMandiRecord.min_price) / 100)).toFixed(2)}/kg</span>
-                      <span>Modal: ₹{(activeMandiRecord.modal_price_per_kg || (Number(activeMandiRecord.modal_price) / 100)).toFixed(2)}/kg</span>
-                      <span>Max: ₹{(activeMandiRecord.max_price_per_kg || (Number(activeMandiRecord.max_price) / 100)).toFixed(2)}/kg</span>
+                      <span>Min: ₹{Number(activeMandiRecord.min_price_per_kg || (Number(activeMandiRecord.min_price) / 100) || 0).toFixed(2)}/kg</span>
+                      <span>Modal: ₹{Number(activeMandiRecord.modal_price_per_kg || (Number(activeMandiRecord.modal_price) / 100) || 0).toFixed(2)}/kg</span>
+                      <span>Max: ₹{Number(activeMandiRecord.max_price_per_kg || (Number(activeMandiRecord.max_price) / 100) || 0).toFixed(2)}/kg</span>
                     </div>
                   )}
 
