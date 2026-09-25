@@ -112,7 +112,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             { id: 'supply_demand', label: 'Supply & Demand', icon: Activity },
             { id: 'pooling', label: 'Pooling', icon: Boxes },
             { id: 'map', label: 'Logistics', icon: Truck },
-            { id: 'calls', label: 'Call Records', icon: PhoneCall },
             { id: 'reports', label: 'Reports', icon: FileText },
           ],
           secondary: [

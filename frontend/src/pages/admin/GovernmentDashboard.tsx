@@ -27,14 +27,13 @@ import {
 } from 'lucide-react';
 import { RoleGuard } from '../../auth/roleGuard';
 import { MandiPriceIntelligence } from '../../components/MandiPriceIntelligence';
-import { CallRecordsView } from '../../components/CallRecordsView';
 import { supabase } from '../../lib/supabase';
 
 export const GovernmentDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { userProfile, role, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    'all' | 'mandi' | 'supply_demand' | 'pooling' | 'logistics' | 'alerts' | 'reports' | 'calls'
+    'all' | 'mandi' | 'supply_demand' | 'pooling' | 'logistics' | 'alerts' | 'reports'
   >('all');
 
   const handleLogout = async () => {
@@ -55,9 +54,6 @@ export const GovernmentDashboard: React.FC = () => {
 
   // Orders integration
   const { orders, loading: ordersLoading, refreshOrders } = useOrders();
-
-  // Call modal / simulation placeholder for CallRecordsView
-  const [showCallModal, setShowCallModal] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -175,8 +171,7 @@ export const GovernmentDashboard: React.FC = () => {
               { id: 'pooling', label: 'Pooling Overview' },
               { id: 'logistics', label: 'Logistics Overview' },
               { id: 'alerts', label: 'Alerts & Deficits' },
-              { id: 'reports', label: 'State Reports' },
-              { id: 'calls', label: 'Call Records / Complaints' }
+              { id: 'reports', label: 'State Reports' }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -432,36 +427,7 @@ export const GovernmentDashboard: React.FC = () => {
             </section>
           )}
 
-          {/* 6. CALL RECORDS / COMPLAINTS (ONLY GOVERNMENT ADMIN) */}
-          {(activeTab === 'all' || activeTab === 'calls') && (
-            <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                <div className="flex items-center gap-2 mb-1">
-                  <PhoneCall className="w-5 h-5 text-emerald-600" />
-                  <h2 className="text-lg font-bold text-slate-900 font-display">
-                    Farmer AI/Voice Call Records &amp; Complaint Surveillance
-                  </h2>
-                  <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-900 text-amber-400 rounded-full">
-                    RESTRICTED TO GOV ADMIN
-                  </span>
-                </div>
-                <p className="text-xs text-slate-600">
-                  Inspect recorded farmer calls, extracted harvest intentions, voice transcripts, and reported complaints across the region.
-                </p>
-              </div>
-
-              <div className="p-2 sm:p-4">
-                <CallRecordsView 
-                  onOpenNewCall={() => setShowCallModal(true)}
-                  onCompileForCrop={(crop, qty, price) => {
-                    alert(`Selected crop ${crop} (${qty}kg @ ₹${price}/kg) for regulatory review.`);
-                  }}
-                />
-              </div>
-            </section>
-          )}
-
-          {/* 7. RECENT TRANSACTIONS / ORDERS */}
+          {/* 6. RECENT TRANSACTIONS / ORDERS */}
           {(activeTab === 'all') && (
             <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">

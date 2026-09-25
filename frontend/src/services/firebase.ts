@@ -33,7 +33,6 @@ import {
   DistributorProfileRecord,
   TransporterProfileRecord
 } from '../../../shared/types';
-import { CallRecordItem } from '../../../shared/data/callRecords';
 
 export const firebaseConfig = {
   projectId: configData.projectId,
@@ -522,34 +521,6 @@ export async function loadBackhaulsFromFirestore(): Promise<BackhaulTrip[]> {
     }
   } catch (err) {
     console.warn('Firestore load backhauls:', err);
-  }
-  return [];
-}
-
-// --- Call Records Firestore Operations ---
-export async function saveCallRecordToFirestore(rec: CallRecordItem): Promise<void> {
-  const path = `call_records/${rec.id}`;
-  try {
-    const docRef = doc(db, 'call_records', rec.id);
-    await setDoc(docRef, {
-      ...rec,
-      updatedAt: new Date().toISOString(),
-    }, { merge: true });
-  } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, path);
-  }
-}
-
-export async function loadCallRecordsFromFirestore(): Promise<CallRecordItem[]> {
-  const path = 'call_records';
-  try {
-    const colRef = collection(db, path);
-    const snap = await getDocs(colRef);
-    if (!snap.empty) {
-      return snap.docs.map(d => d.data() as CallRecordItem);
-    }
-  } catch (err) {
-    console.warn('Firestore load call records:', err);
   }
   return [];
 }

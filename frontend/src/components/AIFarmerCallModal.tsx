@@ -20,9 +20,8 @@ import {
   Play,
   RotateCcw
 } from 'lucide-react';
-import { callAudio } from '../utils/callAudio';
+import { speech } from '../utils/speech';
 import { api } from '../services/api';
-import { saveCallRecord } from '../../../shared/data/callRecords';
 
 interface AIFarmerCallModalProps {
   isOpen: boolean;
@@ -94,7 +93,7 @@ export const AIFarmerCallModal: React.FC<AIFarmerCallModalProps> = ({
     setDialogue(prev => [...prev, newItem]);
 
     if (!isMuted) {
-      callAudio.speak({
+      speech.speak({
         text,
         isAi,
         rate: speechRate,
@@ -119,8 +118,8 @@ export const AIFarmerCallModal: React.FC<AIFarmerCallModalProps> = ({
 
   // Replay speech
   const handleReplayAudio = (item: DialogueItem) => {
-    callAudio.stopSpeech();
-    callAudio.speak({
+    speech.stopSpeech();
+    speech.speak({
       text: item.text,
       isAi: item.isAi,
       rate: speechRate,
@@ -148,7 +147,7 @@ export const AIFarmerCallModal: React.FC<AIFarmerCallModalProps> = ({
         stopRingRef.current = null;
       }
       clearTimeout(autoPlayTimeoutRef.current);
-      callAudio.stopSpeech();
+      speech.stopSpeech();
       setCallState('calling');
       setSeconds(0);
       setDialogue([]);
@@ -166,16 +165,8 @@ export const AIFarmerCallModal: React.FC<AIFarmerCallModalProps> = ({
       return;
     }
 
-    // Start telephone ringback tone
-    stopRingRef.current = callAudio.startRingbackTone();
-
-    // Call connects after 2.2s -> Starts asking Question 1 (Crop)
+    // Call connects after 1.5s -> Starts asking Question 1 (Crop)
     const connectTimer = setTimeout(() => {
-      if (stopRingRef.current) {
-        stopRingRef.current();
-        stopRingRef.current = null;
-      }
-      callAudio.playConnectChirp();
       setCallState('ask_crop');
 
       // AI asks: Greeting + Which Crop?
@@ -186,15 +177,12 @@ export const AIFarmerCallModal: React.FC<AIFarmerCallModalProps> = ({
           true
         );
       }, 500);
-    }, 2200);
+    }, 1500);
 
     return () => {
       clearTimeout(connectTimer);
       clearTimeout(autoPlayTimeoutRef.current);
-      if (stopRingRef.current) {
-        stopRingRef.current();
-      }
-      callAudio.stopSpeech();
+      speech.stopSpeech();
     };
   }, [isOpen]);
 
@@ -285,7 +273,7 @@ export const AIFarmerCallModal: React.FC<AIFarmerCallModalProps> = ({
   // Auto-Play Demonstration sequence
   const startAutoPlay = () => {
     setIsAutoPlaying(true);
-    callAudio.stopSpeech();
+    speech.stopSpeech();
 
     // Reset conversation to initial state
     setDialogue([]);
@@ -492,7 +480,7 @@ export const AIFarmerCallModal: React.FC<AIFarmerCallModalProps> = ({
   const handleToggleMute = () => {
     const nextMute = !isMuted;
     setIsMuted(nextMute);
-    callAudio.setMuted(nextMute);
+    speech.setMuted(nextMute);
     if (nextMute) {
       setIsSpeaking(false);
       setCurrentSpeakingId(null);
@@ -501,39 +489,11 @@ export const AIFarmerCallModal: React.FC<AIFarmerCallModalProps> = ({
 
   // Hangup and finalize
   const handleEndCall = (save: boolean = true) => {
-    callAudio.stopSpeech();
-    callAudio.playDisconnectTone();
+    speech.stopSpeech();
     clearTimeout(autoPlayTimeoutRef.current);
     setCallState('ended');
 
     if (save) {
-      const cropName = harvestData.crop || 'Tomato';
-      const cropIcon = cropName === 'Onion' ? '🧅' : cropName === 'Potato' ? '🥔' : cropName === 'Garlic' ? '🧄' : '🍅';
-      const cropHindi = cropName === 'Onion' ? 'Pyaz' : cropName === 'Potato' ? 'Aloo' : cropName === 'Garlic' ? 'Lahsun' : 'Tamatar';
-      
-      try {
-        saveCallRecord({
-          farmerName: 'Ramesh Patel',
-          phoneNumber: '+91 98260 11234',
-          location: harvestData.location || 'Sanwer (Cluster A), Indore',
-          crop: cropName,
-          cropHindi,
-          cropIcon,
-          quantityKg: harvestData.quantityKg || 150,
-          minAcceptablePrice: harvestData.minAcceptablePrice || 14,
-          marketPriceBenchmark: 10.5,
-          durationSeconds: seconds || 38,
-          status: 'compiled',
-          dialogue: dialogue.length > 0 
-            ? dialogue.map(d => ({ speaker: d.speaker, text: d.text, isAi: d.isAi, timestamp: d.timestamp }))
-            : [
-                { speaker: 'AgriMitra (AI Calling Assistant)', text: `Fasal: ${cropName}, Wazan: ${harvestData.quantityKg || 150} kg, Minimum bhav: ₹${harvestData.minAcceptablePrice || 14}/kg confirm kiya gaya.`, isAi: true }
-              ]
-        });
-      } catch (err) {
-        console.warn('Failed to save call record to storage', err);
-      }
-
       setTimeout(() => {
         onHarvestCreated({
           crop: harvestData.crop || 'Tomato',
@@ -544,9 +504,9 @@ export const AIFarmerCallModal: React.FC<AIFarmerCallModalProps> = ({
           sellingWindow: harvestData.sellingWindow,
         });
         onClose();
-      }, 1200);
+      }, 1000);
     } else {
-      setTimeout(onClose, 800);
+      setTimeout(onClose, 500);
     }
   };
 

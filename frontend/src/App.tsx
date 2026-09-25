@@ -9,7 +9,6 @@ import { QualityVerificationView } from './components/QualityVerificationView';
 import { CorridorMapView } from './components/CorridorMapView';
 import { EscrowSettlementView } from './components/EscrowSettlementView';
 import { LandingOverview } from './components/LandingOverview';
-import { CallRecordsView } from './components/CallRecordsView';
 import { GovernmentDashboard } from './pages/admin/GovernmentDashboard';
 import { AdminCommandCenter } from './components/AdminCommandCenter';
 
@@ -100,38 +99,6 @@ export default function App() {
 
         {(currentTab === 'compiler' || currentTab === 'produce' || currentTab === 'offers') && (
           <CompilerView onChainAccepted={handleChainAccepted} initialHarvest={compilerHarvest} />
-        )}
-
-        {currentTab === 'calls' && (
-          role === 'government_admin' ? (
-            <CallRecordsView
-              onOpenNewCall={() => setIsCallOpen(true)}
-              onCompileForCrop={(crop, qty, price) => {
-                setCurrentTab('compiler');
-                showNotification(`Compiling optimal supply chain for ${qty}kg ${crop} (Target: ₹${price}/kg)...`);
-              }}
-            />
-          ) : (
-            <div className="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-3xl text-center space-y-4 shadow-sm">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto">
-                <ShieldAlert className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900">Government Clearance Required</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Farmer AI voice call records, audio transcriptions, and grievance logs are protected under regulatory privacy rules and accessible exclusively to verified Government Administrators.
-              </p>
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => setCurrentTab('landing')}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Return to Main View</span>
-                </button>
-              </div>
-            </div>
-          )
         )}
 
         {(currentTab === 'map' || currentTab === 'tracking') && (

@@ -321,7 +321,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
             <span className="text-[11px] text-slate-500 block">
               {liveMandi?.available && matchingLiveRecord
                 ? `${matchingLiveRecord.market} APMC Rate`
-                : 'Indore APMC Mandi Range'}
+                : 'Regional APMC Mandi Benchmark'}
             </span>
             <div className="mt-1">
               {liveMandi?.available && matchingLiveRecord ? (

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, MicOff, X, Sparkles, CheckCircle2, ArrowRight, Volume2, AlertCircle, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
-import { callAudio } from '../utils/callAudio';
+import { speech } from '../utils/speech';
 
 interface AgriMitraVoiceModalProps {
   isOpen: boolean;
@@ -22,7 +22,7 @@ export const AgriMitraVoiceModal: React.FC<AgriMitraVoiceModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) {
-      callAudio.stopSpeech();
+      speech.stopSpeech();
       setIsListening(false);
       setIsProcessing(false);
       setAiResponse(null);
@@ -30,7 +30,7 @@ export const AgriMitraVoiceModal: React.FC<AgriMitraVoiceModalProps> = ({
       setTranscript('');
     }
     return () => {
-      callAudio.stopSpeech();
+      speech.stopSpeech();
     };
   }, [isOpen]);
 
@@ -113,7 +113,7 @@ export const AgriMitraVoiceModal: React.FC<AgriMitraVoiceModalProps> = ({
       setAiResponse(result);
       setStage('extracted');
       if (result.hindiReply) {
-        callAudio.speak({ text: result.hindiReply, isAi: true, preferredLang: 'hi' });
+        speech.speak({ text: result.hindiReply, isAi: true, preferredLang: 'hi' });
       }
     } catch {
       const fallback = {
@@ -126,7 +126,7 @@ export const AgriMitraVoiceModal: React.FC<AgriMitraVoiceModalProps> = ({
       };
       setAiResponse(fallback);
       setStage('extracted');
-      callAudio.speak({ text: fallback.hindiReply, isAi: true, preferredLang: 'hi' });
+      speech.speak({ text: fallback.hindiReply, isAi: true, preferredLang: 'hi' });
     } finally {
       setIsProcessing(false);
     }
@@ -258,7 +258,7 @@ export const AgriMitraVoiceModal: React.FC<AgriMitraVoiceModalProps> = ({
                 </p>
                 <button
                   type="button"
-                  onClick={() => callAudio.speak({ text: aiResponse.hindiReply, isAi: true, preferredLang: 'hi' })}
+                  onClick={() => speech.speak({ text: aiResponse.hindiReply, isAi: true, preferredLang: 'hi' })}
                   className="p-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shrink-0 cursor-pointer shadow-xs transition-colors"
                   title="Listen to AgriMitra voice reply again"
                 >

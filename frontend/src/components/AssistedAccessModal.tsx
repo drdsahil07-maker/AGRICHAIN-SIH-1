@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, Phone, Smartphone, Users, X, Send, Check, CheckCheck, Sparkles, Volume2 } from 'lucide-react';
-import { callAudio } from '../utils/callAudio';
+import { speech } from '../utils/speech';
 
 interface AssistedAccessModalProps {
   isOpen: boolean;
@@ -179,7 +179,7 @@ export const AssistedAccessModal: React.FC<AssistedAccessModalProps> = ({
               </p>
               <button
                 type="button"
-                onClick={() => callAudio.speak({
+                onClick={() => speech.speak({
                   text: 'AgriChain Toll Free IVR mein aapka swagat hai. Tamatar ke liye ek dabayein, pyaz ke liye do dabayein. Kripya fasal ki matra bolein. Aapka sabse behtar bhav choudah rupaye bees paise prati kilo mila hai.',
                   isAi: true,
                   preferredLang: 'hi'

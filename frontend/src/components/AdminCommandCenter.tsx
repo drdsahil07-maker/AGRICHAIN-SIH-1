@@ -214,7 +214,7 @@ export const AdminCommandCenter: React.FC = () => {
           {[
             {
               role: '🌾 Farmer',
-              write: 'harvests, call_records',
+              write: 'harvests',
               read: 'all supply chains, buyer demands, backhaul options',
               authRule: 'Author verification (farmerId == auth.uid)',
               bg: 'bg-emerald-50/60 border-emerald-200',

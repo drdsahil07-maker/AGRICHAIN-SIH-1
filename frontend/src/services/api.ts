@@ -314,7 +314,7 @@ export const api = {
     return SEED_PRICE_BENCHMARKS;
   },
 
-  async getMandiPrices(filters?: { commodity?: string; state?: string; district?: string }): Promise<{
+  async getMandiPrices(filters?: { commodity?: string; state?: string; district?: string; market?: string; limit?: number; offset?: number }): Promise<{
     success: boolean;
     available: boolean;
     records: any[];
@@ -322,12 +322,16 @@ export const api = {
     message?: string;
     lastUpdated?: string;
     source?: string;
+    count?: number;
   }> {
     try {
       const params = new URLSearchParams();
       if (filters?.commodity) params.append('commodity', filters.commodity);
       if (filters?.state) params.append('state', filters.state);
       if (filters?.district) params.append('district', filters.district);
+      if (filters?.market) params.append('market', filters.market);
+      if (filters?.limit) params.append('limit', String(filters.limit));
+      if (filters?.offset) params.append('offset', String(filters.offset));
       const queryString = params.toString() ? `?${params.toString()}` : '';
       const res = await fetchWithAuth(`/api/mandi/prices${queryString}`);
       if (res.ok) {
@@ -342,6 +346,36 @@ export const api = {
       error: 'Government mandi feed unavailable',
       message: 'Government mandi feed unavailable',
       records: []
+    };
+  },
+
+  async getMandiLocations(params?: { state?: string; district?: string }): Promise<{
+    success: boolean;
+    states: string[];
+    selectedState?: string | null;
+    districts: string[];
+    selectedDistrict?: string | null;
+    markets: string[];
+    commodities: string[];
+  }> {
+    try {
+      const q = new URLSearchParams();
+      if (params?.state) q.append('state', params.state);
+      if (params?.district) q.append('district', params.district);
+      const query = q.toString() ? `?${q.toString()}` : '';
+      const res = await fetchWithAuth(`/api/mandi/locations${query}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn('Mandi locations fetch error:', e);
+    }
+    return {
+      success: false,
+      states: [],
+      districts: [],
+      markets: [],
+      commodities: []
     };
   },
 
@@ -429,44 +463,6 @@ export const api = {
       minAcceptablePrice: 12,
       farmerIntent: 'confirmed',
       hindiReply: 'Ram-ram ji! Aapke 100 kg tamatar ka entry taiyyar hai (bhav ₹12/kg).'
-    };
-  },
-
-  async simulateFarmerCall(farmerName: string = 'Ramesh Patel', crop: string = 'Tomato', quantityKg: number = 100): Promise<any> {
-    try {
-      const res = await fetchWithAuth('/api/calls/simulate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ farmerName, crop, quantityKg }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data;
-      }
-    } catch (e) {
-      console.warn('Call simulation fallback:', e);
-    }
-    return {
-      success: true,
-      callId: `CALL-${Date.now()}`,
-      farmerName,
-      status: 'completed',
-      durationSeconds: 24,
-      script: [
-        { speaker: 'AI Assistant', text: `Namaste ${farmerName} ji! Main AgriChain se bol raha hoon.` },
-        { speaker: 'AI Assistant', text: `Aapke ${quantityKg} kg ${crop} ki entry mili hai. Kya aap ise kal bechna chahte hain?` },
-        { speaker: farmerName, text: 'Haan, kal subah tak taiyyar ho jayega.', isFarmer: true },
-        { speaker: 'AI Assistant', text: 'Aapka minimum bhav kya hona chahiye?' },
-        { speaker: farmerName, text: '12 rupaye kilo kam se kam.', isFarmer: true },
-        { speaker: 'AI Assistant', text: 'Thik hai Ramesh ji! Main aapke liye buyers aur shared transport options compile karta hoon.' }
-      ],
-      extractedHarvest: {
-        crop,
-        quantityKg,
-        minAcceptablePrice: 12,
-        sellingWindow: 'Tomorrow Morning',
-        location: 'Sanwer (Cluster A), Indore'
-      }
     };
   },
 
