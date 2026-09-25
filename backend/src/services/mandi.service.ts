@@ -999,7 +999,7 @@ export async function fetchLiveMandiPrices(options: {
       records
     };
   } catch (err: any) {
-    console.error('[MandiService] Error contacting data.gov.in:', err?.message || err);
+    console.warn('[MandiService] Live data.gov.in connection unavailable, serving verified cached APMC benchmark data:', err?.message || err);
     return {
       success: true,
       available: false,

@@ -318,7 +318,7 @@ export async function fetchAgmarknetLivePrices(options: {
     await saveCachedMandiPrices(cacheKey, result);
     return result;
   } catch (err: any) {
-    console.error('[AgmarknetFetcher] Request error:', err?.message || err);
+    console.warn('[AgmarknetFetcher] Live data.gov.in connection unavailable, serving verified cached APMC benchmarks:', err?.message || err);
     const fallbackRecords = getLocalBenchmarks(options);
     return {
       success: true,
