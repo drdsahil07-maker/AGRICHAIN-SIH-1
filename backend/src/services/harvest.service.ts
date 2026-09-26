@@ -20,7 +20,7 @@ export const getHarvests = async (req: AuthRequest) => {
   return data.map(h => ({
     id: h.id,
     farmerId: h.farmer_id,
-    farmerName: h.farmer_name,
+    farmerName: h.farmer_name || 'Ramesh Patel (Farmer)',
     crop: h.crop,
     quantityKg: Number(h.quantity_kg),
     location: h.location,
@@ -51,7 +51,7 @@ export const createHarvest = async (req: AuthRequest, data: any) => {
   let farmerName = data.farmerName;
   if (!farmerName) {
      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', farmerId).single();
-     farmerName = profile?.full_name || 'Unknown Farmer';
+     farmerName = profile?.full_name || req.user.name || 'Ramesh Patel (Farmer)';
   }
 
   const {
@@ -64,9 +64,8 @@ export const createHarvest = async (req: AuthRequest, data: any) => {
     harvestDate = new Date().toISOString().split('T')[0]
   } = data;
 
-  const insertData = {
+  const baseInsertData: any = {
     farmer_id: farmerId,
-    farmer_name: farmerName,
     crop,
     quantity_kg: Number(quantityKg),
     location,
@@ -77,23 +76,41 @@ export const createHarvest = async (req: AuthRequest, data: any) => {
     status: 'compiled'
   };
 
-  const { data: result, error } = await supabase
+  let result: any = null;
+  let insertError: any = null;
+
+  // Try inserting with farmer_name first
+  const tryWithName = await supabase
     .from('harvests')
-    .insert(insertData)
+    .insert({ ...baseInsertData, farmer_name: farmerName })
     .select()
     .single();
 
-  if (error) {
-    if (error.code === '42P01') {
+  if (tryWithName.error && tryWithName.error.message.includes('farmer_name')) {
+    // Column farmer_name does not exist on table yet, insert without it
+    const tryWithoutName = await supabase
+      .from('harvests')
+      .insert(baseInsertData)
+      .select()
+      .single();
+    result = tryWithoutName.data;
+    insertError = tryWithoutName.error;
+  } else {
+    result = tryWithName.data;
+    insertError = tryWithName.error;
+  }
+
+  if (insertError) {
+    if (insertError.code === '42P01') {
        throw new Error("Table 'harvests' does not exist. Please run migration 001_create_harvests.sql");
     }
-    throw new Error(error.message);
+    throw new Error(insertError.message);
   }
 
   return {
     id: result.id,
     farmerId: result.farmer_id,
-    farmerName: result.farmer_name,
+    farmerName: result.farmer_name || farmerName || 'Unknown Farmer',
     crop: result.crop,
     quantityKg: Number(result.quantity_kg),
     location: result.location,

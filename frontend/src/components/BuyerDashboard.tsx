@@ -21,12 +21,23 @@ export const BuyerDashboard: React.FC = () => {
   // Available farm produce ready for purchase
   const [realHarvests, setRealHarvests] = useState<Harvest[]>([]);
   const [realPools, setRealPools] = useState<FarmerPool[]>([]);
+  const [myOffers, setMyOffers] = useState<any[]>([]);
+  const [selectedHarvestForOffer, setSelectedHarvestForOffer] = useState<Harvest | null>(null);
+  const [offerPriceInput, setOfferPriceInput] = useState<number>(18);
+  const [offerQuantityInput, setOfferQuantityInput] = useState<number>(100);
+  const [offerDestinationInput, setOfferDestinationInput] = useState<string>('Dewas APMC Yard, Madhya Pradesh');
+  const [isSubmittingOffer, setIsSubmittingOffer] = useState(false);
   
   const { orders, refreshOrders } = useOrders();
 
-  useEffect(() => {
+  const loadData = () => {
     api.getHarvests().then(h => setRealHarvests(h));
     api.getPools().then(p => setRealPools(p));
+    api.getOffers().then(o => setMyOffers(o));
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const handleCreateOrder = async (poolId: string, crop: string, quantityKg: number, agreedPrice: number) => {
@@ -46,19 +57,33 @@ export const BuyerDashboard: React.FC = () => {
     }
   };
 
-  const handlePlaceOffer = async (harvestId: string, crop: string, quantityKg: number) => {
+  const handleOpenOfferModal = (harvest: Harvest) => {
+    setSelectedHarvestForOffer(harvest);
+    setOfferPriceInput(Number(harvest.minAcceptablePrice) + 2 || 18);
+    setOfferQuantityInput(Number(harvest.quantityKg) || 100);
+    setOfferDestinationInput(buyer.location || 'Dewas APMC Yard, Madhya Pradesh');
+  };
+
+  const handleSubmitOffer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedHarvestForOffer) return;
+    setIsSubmittingOffer(true);
     try {
       await api.createOffer({
-        harvestId,
-        crop,
-        quantityKg,
-        offeredPrice: 18.0,
-        destination: buyer.location,
+        harvestId: selectedHarvestForOffer.id,
+        crop: selectedHarvestForOffer.crop,
+        quantityKg: offerQuantityInput,
+        offeredPrice: offerPriceInput,
+        destination: offerDestinationInput,
         pickupTerms: 'Farmgate'
       });
-      alert("Offer placed successfully for ₹18/kg!");
-    } catch(e) {
-      alert("Error placing offer. Are you logged in as a buyer? " + e);
+      alert(`Offer placed successfully for ₹${offerPriceInput}/kg!`);
+      setSelectedHarvestForOffer(null);
+      loadData();
+    } catch(e: any) {
+      alert("Error placing offer: " + (e.message || e));
+    } finally {
+      setIsSubmittingOffer(false);
     }
   };
   const availableProduce = [
@@ -140,6 +165,77 @@ export const BuyerDashboard: React.FC = () => {
           <Plus className="w-4 h-4" />
           <span>+ Post Demand</span>
         </button>
+      </div>
+
+      {/* Real Available Farmgate Harvests Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold text-slate-900 font-display">
+              Live Farmgate Harvests (Real Produce Ready for Bidding)
+            </h2>
+            <p className="text-xs text-slate-500">Live harvests submitted by farmers to Supabase</p>
+          </div>
+          <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
+            {realHarvests.length} Active Lots
+          </span>
+        </div>
+
+        {realHarvests.length === 0 ? (
+          <div className="p-6 bg-white rounded-2xl border border-slate-200 text-center text-xs text-slate-500">
+            No live harvests currently declared by farmers in Supabase. Farmers can declare produce in the Farmer Dashboard.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {realHarvests.map((harvest) => (
+              <div 
+                key={harvest.id}
+                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between space-y-4 hover:border-emerald-300 transition-all"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-bold text-slate-900 font-display">{harvest.crop}</span>
+                    <span className="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+                      {harvest.qualityGrade || 'Grade A'}
+                    </span>
+                  </div>
+
+                  <div className="text-2xl font-extrabold text-emerald-700 font-display">
+                    {harvest.quantityKg} kg
+                  </div>
+
+                  <div className="space-y-1 text-xs text-slate-600 pt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Farmer:</span>
+                      <span className="font-semibold text-slate-800">{harvest.farmerName || 'Verified Farmer'}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Location:</span>
+                      <span className="font-medium text-slate-800">{harvest.location}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Min Price:</span>
+                      <span className="font-bold text-slate-900">₹{harvest.minAcceptablePrice}/kg</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Window:</span>
+                      <span className="font-medium text-slate-700">{harvest.sellingWindow}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleOpenOfferModal(harvest)}
+                  className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <DollarSign className="w-3.5 h-3.5" />
+                  <span>Make Distributor Offer</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Available Pools Section */}
@@ -249,6 +345,43 @@ export const BuyerDashboard: React.FC = () => {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Distributor Offers Placed Section */}
+      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-bold text-slate-900 font-display flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-emerald-600" />
+            <span>My Active Distributor Offers (Bids Placed)</span>
+          </h3>
+          <span className="text-xs text-slate-500">{myOffers.length} offers recorded</span>
+        </div>
+        {myOffers.length === 0 ? (
+          <div className="text-xs text-slate-500 py-4 text-center">No offers placed yet. Select a harvest above to submit a distributor offer.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {myOffers.map((offer) => (
+              <div key={offer.id} className="p-4 border border-slate-200 rounded-2xl space-y-2 bg-slate-50">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900 text-sm">{offer.crop} ({offer.quantityKg} kg)</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                    offer.status === 'ACCEPTED' ? 'bg-emerald-100 text-emerald-800' :
+                    offer.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' :
+                    offer.status === 'COUNTERED' ? 'bg-amber-100 text-amber-800' :
+                    'bg-blue-100 text-blue-800'
+                  }`}>
+                    {offer.status}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-600 flex items-center justify-between">
+                  <span>Offered Price: <strong className="text-emerald-700">₹{offer.offeredPrice}/kg</strong></span>
+                  <span>Pickup: {offer.pickupTerms}</span>
+                </div>
+                <div className="text-[11px] text-slate-500">Destination: {offer.destination}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* My Active Orders List */}
@@ -392,6 +525,110 @@ export const BuyerDashboard: React.FC = () => {
                 Broadcast Demand
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Distributor Make Offer Modal */}
+      {selectedHarvestForOffer && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center">
+                  <DollarSign className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 font-display text-sm">
+                    Submit Distributor Offer
+                  </h3>
+                  <p className="text-xs text-slate-500">Direct Farmgate Procurement</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedHarvestForOffer(null)}
+                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Crop:</span>
+                <span className="font-bold text-slate-900">{selectedHarvestForOffer.crop}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Total Lot Size:</span>
+                <span className="font-semibold text-slate-800">{selectedHarvestForOffer.quantityKg} kg</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Farmer's Min Acceptable Price:</span>
+                <span className="font-bold text-emerald-700">₹{selectedHarvestForOffer.minAcceptablePrice}/kg</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Location:</span>
+                <span className="text-slate-700">{selectedHarvestForOffer.location}</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmitOffer} className="space-y-3 text-xs">
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Your Offered Price (₹/kg)</label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">₹</span>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={offerPriceInput}
+                    onChange={(e) => setOfferPriceInput(Number(e.target.value))}
+                    className="w-full pl-7 bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Procurement Quantity (kg)</label>
+                <input
+                  type="number"
+                  value={offerQuantityInput}
+                  onChange={(e) => setOfferQuantityInput(Number(e.target.value))}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-medium text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  max={selectedHarvestForOffer.quantityKg}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Delivery Destination</label>
+                <input
+                  type="text"
+                  value={offerDestinationInput}
+                  onChange={(e) => setOfferDestinationInput(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-medium text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setSelectedHarvestForOffer(null)}
+                  disabled={isSubmittingOffer}
+                  className="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingOffer}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-5 rounded-xl shadow-xs transition-transform active:scale-95 cursor-pointer disabled:opacity-50"
+                >
+                  {isSubmittingOffer ? 'Submitting to Supabase...' : 'Submit Real Offer'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

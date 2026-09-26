@@ -73,6 +73,29 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
   ) || liveMandi?.records?.[0];
   const { orders } = useOrders();
 
+  const [receivedOffers, setReceivedOffers] = useState<any[]>([]);
+  const [offerActionLoading, setOfferActionLoading] = useState<string | null>(null);
+
+  const loadOffers = () => {
+    api.getOffers().then(setReceivedOffers).catch(console.error);
+  };
+
+  useEffect(() => {
+    loadOffers();
+  }, [activeHarvests]);
+
+  const handleUpdateStatus = async (offerId: string, status: string) => {
+    setOfferActionLoading(offerId);
+    try {
+      await api.updateOfferStatus(offerId, status);
+      loadOffers();
+    } catch (err: any) {
+      alert("Failed to update offer: " + (err.message || err));
+    } finally {
+      setOfferActionLoading(null);
+    }
+  };
+
   const flagshipHarvest = activeHarvests.find(h => h.id === 'AC-HRV-2026-00124') || activeHarvests[0];
 
   return (
@@ -264,6 +287,105 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Direct Distributor Offers Received Section */}
+      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 font-display flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-emerald-600" />
+              <span>Distributor Offers Received for Your Produce</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">Bids placed directly by licensed distributors & APMC buyers</p>
+          </div>
+          <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
+            {receivedOffers.length} {receivedOffers.length === 1 ? 'Offer' : 'Offers'}
+          </span>
+        </div>
+
+        {receivedOffers.length === 0 ? (
+          <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-center text-xs text-slate-500">
+            No incoming buyer offers yet. Active distributor bids from the marketplace will appear here automatically.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {receivedOffers.map((offer) => {
+              const netValue = (offer.offeredPrice - 1.20).toFixed(2);
+              const mandiGain = (Number(netValue) - 11.0).toFixed(2);
+              return (
+                <div key={offer.id} className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 transition-all space-y-3 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 text-sm">{offer.buyerName}</span>
+                        <span className="text-xs text-slate-400">&bull;</span>
+                        <span className="font-semibold text-slate-700 text-xs">{offer.crop} ({offer.quantityKg} kg)</span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Destination: {offer.destination} &bull; Pickup: {offer.pickupTerms}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 self-start sm:self-center">
+                      <div className="text-right">
+                        <div className="text-xs text-slate-400">Offered Rate</div>
+                        <div className="text-lg font-black text-slate-900 font-display">₹{offer.offeredPrice}/kg</div>
+                      </div>
+                      <div className="text-right bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+                        <div className="text-[10px] text-emerald-800 font-bold uppercase">Net Farmer Value</div>
+                        <div className="text-base font-extrabold text-emerald-700 font-display">₹{netValue}/kg</div>
+                        <div className="text-[9px] text-emerald-700 font-semibold">+₹{mandiGain}/kg vs Mandi</div>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase ${
+                        offer.status === 'ACCEPTED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                        offer.status === 'REJECTED' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
+                        offer.status === 'COUNTERED' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                        'bg-blue-100 text-blue-800 border border-blue-300'
+                      }`}>
+                        {offer.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {offer.status === 'ACTIVE' && (
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateStatus(offer.id, 'REJECTED')}
+                        disabled={offerActionLoading === offer.id}
+                        className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold cursor-pointer disabled:opacity-50"
+                      >
+                        Reject
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const counter = prompt("Enter your counter-offer price per kg (₹):", (offer.offeredPrice + 1).toString());
+                          if (counter) {
+                            handleUpdateStatus(offer.id, 'COUNTERED');
+                          }
+                        }}
+                        disabled={offerActionLoading === offer.id}
+                        className="px-3 py-1.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold cursor-pointer disabled:opacity-50"
+                      >
+                        Counter Offer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateStatus(offer.id, 'ACCEPTED')}
+                        disabled={offerActionLoading === offer.id}
+                        className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
+                      >
+                        {offerActionLoading === offer.id ? 'Processing...' : 'Accept Offer (Lock ₹' + netValue + '/kg)'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Mandi Price Benchmark Engine Card */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">

@@ -125,35 +125,16 @@ export const api = {
   },
 
   async createHarvest(payload: Partial<Harvest>): Promise<Harvest> {
-    const newH: Harvest = {
-      id: `AC-HRV-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-      farmerId: 'f-1',
-      farmerName: payload.farmerName || 'Ramesh Patel',
-      crop: payload.crop || 'Tomato',
-      quantityKg: payload.quantityKg || 100,
-      location: payload.location || 'Sanwer, Indore',
-      harvestDate: new Date().toISOString().split('T')[0],
-      sellingWindow: payload.sellingWindow || 'Tomorrow Morning',
-      minAcceptablePrice: payload.minAcceptablePrice || 12,
-      qualityGrade: payload.qualityGrade || 'Grade A',
-      status: 'compiled',
-      createdAt: new Date().toISOString(),
-    };
-
-    try {
-      const res = await fetchWithAuth('/api/harvests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.harvest;
-      }
-    } catch (e) {
-      console.warn('Create harvest API fallback:', e);
+    const res = await fetchWithAuth('/api/harvests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data?.error?.message || "Failed to create harvest record in database");
     }
-    return newH;
+    return data.harvest;
   },
 
   
@@ -283,8 +264,23 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(offerData),
     });
-    if (!res.ok) throw new Error("Failed to create offer");
     const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data?.error?.message || "Failed to create offer in database");
+    }
+    return data.offer;
+  },
+
+  async updateOfferStatus(offerId: string, status: 'ACCEPTED' | 'REJECTED' | 'COUNTERED' | string): Promise<any> {
+    const res = await fetchWithAuth(`/api/offers/${offerId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data?.error?.message || "Failed to update offer status");
+    }
     return data.offer;
   },
 

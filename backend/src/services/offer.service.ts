@@ -1,4 +1,4 @@
-import { AuthRequest, getScopedClient } from '../middleware/auth';
+import { AuthRequest, getScopedClient, supabaseAdmin } from '../middleware/auth';
 
 export const getOffers = async (req: AuthRequest, harvestId?: string) => {
   const supabase = getScopedClient(req);
@@ -51,7 +51,7 @@ export const createOffer = async (req: AuthRequest, data: any) => {
   let buyerName = data.buyerName;
   if (!buyerName) {
      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', buyerId).single();
-     buyerName = profile?.full_name || 'Unknown Buyer';
+     buyerName = profile?.full_name || req.user?.name || 'Kisan Agro Mandi Traders';
   }
 
   const {
@@ -104,5 +104,64 @@ export const createOffer = async (req: AuthRequest, data: any) => {
     pickupTerms: result.pickup_terms,
     status: result.status,
     createdAt: result.created_at
+  };
+};
+
+export const updateOfferStatus = async (req: AuthRequest, offerId: string, status: string) => {
+  const supabase = getScopedClient(req);
+
+  if (!req.user || !req.user.id) {
+    throw new Error("Authenticated user required to update offer status");
+  }
+
+  // Fetch offer to verify authorization
+  const { data: existingOffer, error: fetchErr } = await supabase
+    .from('buyer_offers')
+    .select('*')
+    .eq('id', offerId)
+    .single();
+
+  if (fetchErr || !existingOffer) {
+    throw new Error("Offer not found");
+  }
+
+  // Verify farmer of harvest or buyer of offer
+  const { data: harvest } = await supabase
+    .from('harvests')
+    .select('farmer_id')
+    .eq('id', existingOffer.harvest_id)
+    .single();
+
+  const isBuyer = existingOffer.buyer_id === req.user.id;
+  const isFarmer = harvest?.farmer_id === req.user.id;
+  if (!isBuyer && !isFarmer && req.user.role !== 'government_admin') {
+    throw new Error("Unauthorized to update status of this offer");
+  }
+
+  const updateClient = supabaseAdmin || supabase;
+  const { data, error } = await updateClient
+    .from('buyer_offers')
+    .update({ status })
+    .eq('id', offerId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    id: data.id,
+    buyerId: data.buyer_id,
+    buyerName: data.buyer_name,
+    harvestId: data.harvest_id,
+    crop: data.crop,
+    quantityKg: Number(data.quantity_kg),
+    offeredPrice: Number(data.offered_price),
+    destination: data.destination,
+    pickupTerms: data.pickup_terms,
+    status: data.status,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at
   };
 };

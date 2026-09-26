@@ -26,3 +26,17 @@ export const createOffer = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: err.message } });
   }
 };
+
+export const updateOfferStatus = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!status) {
+      return res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'Status is required' } });
+    }
+    const updatedOffer = await offerService.updateOfferStatus(req, id, status);
+    res.json({ success: true, offer: updatedOffer });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: err.message } });
+  }
+};
